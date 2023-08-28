@@ -6,7 +6,6 @@
 
 #include "car.h"
 #include "sensors.h"
-#include "beacons.h"
 
 using Eigen::VectorXd;
 using Eigen::Vector2d;
@@ -47,9 +46,7 @@ class KalmanFilter : public KalmanFilterBase
 
         void predictionStep(double dt);
         void predictionStep(GyroMeasurement gyro, double dt);
-        void handleLidarMeasurements(const std::vector<LidarMeasurement>& meas, const BeaconMap& map);
-        void handleLidarMeasurement(LidarMeasurement meas, const BeaconMap& map);
-        void handleGPSMeasurement(GPSMeasurement meas);
+        void handleRadarMeasurement(RadarMeasurement meas);
 
 };
 

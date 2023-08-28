@@ -59,13 +59,13 @@ int main( int argc, char* args[] )
         // Update Display
         mDisplay.clearScreen();
 
-            // Draw Background Grid
-            mDisplay.setDrawColour(101,101,101);
-            for (int x = -GRID_SIZE; x <= GRID_SIZE; x+=GRID_SPACEING){mDisplay.drawLine(Vector2(x,-GRID_SIZE),Vector2(x,GRID_SIZE));}
-            for (int y = -GRID_SIZE; y <= GRID_SIZE; y+=GRID_SPACEING){mDisplay.drawLine(Vector2(-GRID_SIZE,y),Vector2(GRID_SIZE,y));}
+        // Draw Background Grid
+        mDisplay.setDrawColour(101,101,101);
+        for (int x = -GRID_SIZE; x <= GRID_SIZE; x+=GRID_SPACEING){mDisplay.drawLine(Vector2(x,-GRID_SIZE),Vector2(x,GRID_SIZE));}
+        for (int y = -GRID_SIZE; y <= GRID_SIZE; y+=GRID_SPACEING){mDisplay.drawLine(Vector2(-GRID_SIZE,y),Vector2(GRID_SIZE,y));}
 
-            // Draw Simulation
-            mSimulation.render(mDisplay);
+        // Draw Simulation
+        mSimulation.render(mDisplay);
 
         mDisplay.showScreen();
 
@@ -113,7 +113,7 @@ int main( int argc, char* args[] )
 SimulationParams loadSimulation1Parameters()
 {
     SimulationParams sim_params;
-    sim_params.profile_name = "1 - Constant Velocity + GPS + GYRO + Zero Initial Conditions";
+    sim_params.profile_name = "1 - Constant Velocity + RADAR + Zero Initial Conditions";
     sim_params.car_initial_velocity = 5;
     sim_params.car_initial_psi = M_PI/180.0 * 45.0;
     sim_params.car_commands.emplace_back(new MotionCommandMoveTo(500,500,5));
@@ -123,7 +123,7 @@ SimulationParams loadSimulation1Parameters()
 SimulationParams loadSimulation2Parameters()
 {
     SimulationParams sim_params;
-    sim_params.profile_name = "2 - Constant Velocity + GPS + GYRO + Non-zero Initial Conditions";
+    sim_params.profile_name = "2 - Constant Velocity + RADAR + Non-zero Initial Conditions";
     sim_params.car_initial_x = 500;
     sim_params.car_initial_y = 500;
     sim_params.car_initial_velocity = 5;
@@ -135,7 +135,7 @@ SimulationParams loadSimulation2Parameters()
 SimulationParams loadSimulation3Parameters()
 {
     SimulationParams sim_params;
-    sim_params.profile_name = "3 - Constant Speed Profile + GPS + GYRO";
+    sim_params.profile_name = "3 - Constant Speed Profile + RADAR";
     sim_params.car_initial_velocity = 5;
     sim_params.car_initial_psi = M_PI/180.0 * 45.0;
     sim_params.car_commands.emplace_back(new MotionCommandMoveTo(100,100,5));
@@ -148,7 +148,7 @@ SimulationParams loadSimulation3Parameters()
 SimulationParams loadSimulation4Parameters()
 {    
     SimulationParams sim_params;
-    sim_params.profile_name = "4 - Variable Speed Profile + GPS + GYRO";
+    sim_params.profile_name = "4 - Variable Speed Profile + RADAR";
     sim_params.end_time = 200;
     sim_params.car_initial_velocity = 0;
     sim_params.car_initial_psi = M_PI/180.0 * 45.0;
@@ -162,24 +162,21 @@ SimulationParams loadSimulation4Parameters()
 SimulationParams loadSimulation5Parameters()
 {    
     SimulationParams sim_params = loadSimulation1Parameters();
-    sim_params.profile_name = "5 - Constant Velocity + GPS + GYRO + LIDAR+ Zero Initial Conditions";
-    sim_params.lidar_enabled = true;
+    sim_params.profile_name = "5 - Constant Velocity + GYRO + Zero Initial Conditions";
     return sim_params;
 }
 
 SimulationParams loadSimulation6Parameters()
 {    
     SimulationParams sim_params = loadSimulation2Parameters();
-    sim_params.profile_name = "6 - Constant Velocity + GPS + GYRO + LIDAR + Non-zero Initial Conditions";
-    sim_params.lidar_enabled = true;
+    sim_params.profile_name = "6 - Constant Velocity + GYRO + Non-zero Initial Conditions";
     return sim_params;
 }
 
 SimulationParams loadSimulation7Parameters()
 {    
     SimulationParams sim_params = loadSimulation3Parameters();
-    sim_params.profile_name = "7 - Constant Speed Profile + GPS + GYRO + LIDAR";
-    sim_params.lidar_enabled = true;
+    sim_params.profile_name = "7 - Constant Speed Profile + GYRO";
     return sim_params;
 }
 
@@ -187,8 +184,7 @@ SimulationParams loadSimulation7Parameters()
 SimulationParams loadSimulation8Parameters()
 {    
     SimulationParams sim_params = loadSimulation4Parameters();
-    sim_params.profile_name = "8 - Variable Speed Profile + GPS + GYRO + LIDAR";
-    sim_params.lidar_enabled = true;
+    sim_params.profile_name = "8 - Variable Speed Profile + GYRO";
     return sim_params;
 }
 
@@ -197,16 +193,11 @@ SimulationParams loadSimulation9Parameters()
     SimulationParams sim_params;
     sim_params.profile_name = "9 - CAPSTONE";
     sim_params.gyro_enabled = true;
-    sim_params.lidar_enabled = true;
     sim_params.end_time = 500;
     sim_params.car_initial_x = 400;
     sim_params.car_initial_y = -400;
     sim_params.car_initial_velocity = 0;
     sim_params.car_initial_psi = M_PI/180.0 * -90.0;
-    sim_params.gps_error_probability = 0.05;
-    sim_params.gps_denied_x = 250.0;
-    sim_params.gps_denied_y = -250.0;
-    sim_params.gps_denied_range = 100.0;
     sim_params.gyro_bias = -3.1/180.0*M_PI;
     sim_params.car_commands.emplace_back(new MotionCommandStraight(3,-2));
     sim_params.car_commands.emplace_back(new MotionCommandTurnTo(M_PI/180.0 * 90.0,-2));
@@ -232,6 +223,5 @@ SimulationParams loadSimulation0Parameters()
 {    
     SimulationParams sim_params = loadSimulation9Parameters();
     sim_params.profile_name = "0 - CAPSTONE BONUS (with No Lidar Data Association)";
-    sim_params.lidar_id_enabled = false;
     return sim_params;
 }

@@ -11,8 +11,7 @@ Simulation::Simulation()
     m_view_size(100),
     m_time(0.0),
     m_time_till_gyro_measurement(0.0),
-    m_time_till_gps_measurement(0.0),
-    m_time_till_lidar_measurement(0.0)
+    m_time_till_radar_measurement(0.0)
 {}
 
 void Simulation::reset()
@@ -20,34 +19,26 @@ void Simulation::reset()
     // Reset Simulation
     m_time = 0.0;
     m_time_till_gyro_measurement = 0.0;
-    m_time_till_gps_measurement = 0.0;
-    m_time_till_lidar_measurement= 0.0;
+    m_time_till_radar_measurement = 0.0;
 
     m_is_running = true;
     m_is_paused = false;
     
     m_kalman_filter.reset();
 
-    m_gps_sensor.reset();
-    m_gps_sensor.setGPSNoiseStd(m_sim_parameters.gps_position_noise_std);
-    m_gps_sensor.setGPSErrorProb(m_sim_parameters.gps_error_probability);
-    m_gps_sensor.setGPSDeniedZone(m_sim_parameters.gps_denied_x, m_sim_parameters.gps_denied_y, m_sim_parameters.gps_denied_range);
-
     m_gyro_sensor.reset();
     m_gyro_sensor.setGyroNoiseStd(m_sim_parameters.gyro_noise_std);
     m_gyro_sensor.setGyroBias(m_sim_parameters.gyro_bias);
 
-    m_lidar_sensor.reset();
-    m_lidar_sensor.setLidarNoiseStd(m_sim_parameters.lidar_range_noise_std, m_sim_parameters.lidar_theta_noise_std);
-    m_lidar_sensor.setLidarDAEnabled(m_sim_parameters.lidar_id_enabled);
+    m_radar_sensor.reset();
+    m_radar_sensor.setRadarNoiseStd(m_sim_parameters.radar_range_noise_std, m_sim_parameters.radar_theta_noise_std);
 
     m_car.reset(m_sim_parameters.car_initial_x, m_sim_parameters.car_initial_y,m_sim_parameters.car_initial_psi, m_sim_parameters.car_initial_velocity);
     
     for(auto& cmd : m_sim_parameters.car_commands){m_car.addVehicleCommand(cmd.get());}
 
     // Plotting Variables
-    m_gps_measurement_history.clear();
-    m_lidar_measurement_history.clear();
+    m_radar_measurement_history.clear();
     m_vehicle_position_history.clear();
     m_filter_position_history.clear();
 
@@ -92,30 +83,17 @@ void Simulation::update()
                 m_time_till_gyro_measurement -= m_sim_parameters.time_step;
             }
 
-            // GPS Measurement
-            if (m_sim_parameters.gps_enabled)
+            // Radar Measurement
+            if (m_sim_parameters.radar_enabled)
             {
-                if (m_time_till_gps_measurement <= 0)
+                if (m_time_till_radar_measurement <= 0)
                 {
-                    GPSMeasurement gps_meas = m_gps_sensor.generateGPSMeasurement(m_car.getVehicleState().x,m_car.getVehicleState().y);
-                    m_kalman_filter.handleGPSMeasurement(gps_meas);
-                    m_gps_measurement_history.push_back(gps_meas);
-                    m_time_till_gps_measurement += 1.0/m_sim_parameters.gps_update_rate;
+                    RadarMeasurement radar_measurement = m_radar_sensor.generateRadarMeasurement(m_car.getVehicleState().x,m_car.getVehicleState().y);
+                    m_kalman_filter.handleRadarMeasurement(radar_measurement);
+                    m_radar_measurement_history.push_back(radar_measurement);
+                    m_time_till_radar_measurement += 1.0/m_sim_parameters.radar_update_rate;
                 }
-                m_time_till_gps_measurement -= m_sim_parameters.time_step;
-            }
-
-            // Lidar Measurement
-            if (m_sim_parameters.lidar_enabled)
-            {
-                if (m_time_till_lidar_measurement <= 0)
-                {
-                    std::vector<LidarMeasurement> lidar_measurements = m_lidar_sensor.generateLidarMeasurements(m_car.getVehicleState().x,m_car.getVehicleState().y, m_car.getVehicleState().psi, m_beacons);
-                    m_kalman_filter.handleLidarMeasurements(lidar_measurements, m_beacons);
-                    m_lidar_measurement_history = lidar_measurements;
-                    m_time_till_lidar_measurement += 1.0/m_sim_parameters.lidar_update_rate;
-                }
-                m_time_till_lidar_measurement -= m_sim_parameters.time_step;
+                m_time_till_radar_measurement -= m_sim_parameters.time_step;
             }
 
             // Save Filter History and Calculate Stats
@@ -144,7 +122,6 @@ void Simulation::render(Display& disp)
     disp.setView(m_view_size * disp.getScreenAspectRatio(),m_view_size, m_car.getVehicleState().x, m_car.getVehicleState().y);
 
     m_car.render(disp);
-    m_beacons.render(disp);
 
     disp.setDrawColour(0,100,0);
     disp.drawLines(m_vehicle_position_history);
@@ -175,28 +152,14 @@ void Simulation::render(Display& disp)
 
     }
 
-    // Render GPS Measurements
-    std::vector<std::vector<Vector2>> m_gps_marker = {{{0.5,0.5},{-0.5,-0.5}}, {{0.5,-0.5},{-0.5,0.5}}};
-    disp.setDrawColour(255,255,255);
-    for(const auto& meas : m_gps_measurement_history){disp.drawLines(offsetPoints(m_gps_marker, Vector2(meas.x,meas.y)));}
-
-    // Render GPS Denied Zone
-    if(m_sim_parameters.gps_denied_range > 0)
+    // Render Radar Measurements
+    std::vector<std::vector<Vector2>> m_radar_marker = {{{0.5,0.5},{-0.5,-0.5}}, {{0.5,-0.5},{-0.5,0.5}}};
+    disp.setDrawColour(0,0,255);
+    for(const auto& meas : m_radar_measurement_history)
     {
-        std::vector<Vector2> zone_lines = generateCircle(m_sim_parameters.gps_denied_x, m_sim_parameters.gps_denied_y, m_sim_parameters.gps_denied_range);
-        disp.setDrawColour(255,150,0);
-        disp.drawLines(zone_lines);
-    }
-
-    // Render Lidar Measurements
-    for(const auto& meas : m_lidar_measurement_history)
-    {
-        double x0 = m_car.getVehicleState().x;
-        double y0 = m_car.getVehicleState().y;
-        double delta_x = meas.range * cos(meas.theta + m_car.getVehicleState().psi);
-        double delta_y = meas.range * sin(meas.theta + m_car.getVehicleState().psi);
-        disp.setDrawColour(201,201,0);
-        disp.drawLine(Vector2(x0,y0), Vector2(x0 + delta_x,y0 + delta_y));
+        double x = meas.range*cos(meas.theta);
+        double y = meas.range*sin(meas.theta);
+        disp.drawLines(offsetPoints(m_radar_marker, Vector2(x, y)));
     }
 
     int x_offset, y_offset; 
@@ -206,16 +169,14 @@ void Simulation::render(Display& disp)
     y_offset = 30;
     std::string time_string = string_format("Time: %0.2f (x%d)",m_time,m_time_multiplier);
     std::string profile_string = string_format("Profile: %s", m_sim_parameters.profile_name.c_str());
-    std::string gps_string = string_format("GPS: %s (%0.1f Hz)", (m_sim_parameters.gps_enabled ? "ON" : "OFF"), m_sim_parameters.gps_update_rate);
-    std::string lidar_string = string_format("LIDAR: %s (%0.1f Hz)", (m_sim_parameters.lidar_enabled ? "ON" : "OFF"), m_sim_parameters.lidar_update_rate);
+    std::string radar_string = string_format("RADAR: %s (%0.1f Hz)", (m_sim_parameters.radar_enabled ? "ON" : "OFF"), m_sim_parameters.radar_update_rate);
     std::string gyro_string = string_format("GYRO: %s (%0.1f Hz)", (m_sim_parameters.gyro_enabled ? "ON" : "OFF"), m_sim_parameters.gyro_update_rate);
     disp.drawText_MainFont(profile_string,Vector2(x_offset,y_offset+stride*-1),1.0,{255,255,255});
     disp.drawText_MainFont(time_string,Vector2(x_offset,y_offset+stride*0),1.0,{255,255,255});
-    disp.drawText_MainFont(gps_string,Vector2(x_offset,y_offset+stride*1),1.0,{255,255,255});
-    disp.drawText_MainFont(lidar_string,Vector2(x_offset,y_offset+stride*2),1.0,{255,255,255});
-    disp.drawText_MainFont(gyro_string,Vector2(x_offset,y_offset+stride*3),1.0,{255,255,255});
-    if (m_is_paused){disp.drawText_MainFont("PAUSED",Vector2(x_offset,y_offset+stride*4),1.0,{255,0,0});}
-    if (!m_is_running){disp.drawText_MainFont("FINISHED",Vector2(x_offset,y_offset+stride*5),1.0,{255,0,0});}
+    disp.drawText_MainFont(radar_string,Vector2(x_offset,y_offset+stride*1),1.0,{255,255,255});
+    disp.drawText_MainFont(gyro_string,Vector2(x_offset,y_offset+stride*2),1.0,{255,255,255});
+    if (m_is_paused){disp.drawText_MainFont("PAUSED",Vector2(x_offset,y_offset+stride*3),1.0,{255,0,0});}
+    if (!m_is_running){disp.drawText_MainFont("FINISHED",Vector2(x_offset,y_offset+stride*4),1.0,{255,0,0});}
 
     // Vehicle State
     x_offset = 800;
