@@ -45,11 +45,13 @@ int main( int argc, char* args[] )
     }
 
     // Create Display
-    if (!mDisplay.createRenderer("AKFSF Simulations", SCREEN_WIDTH, SCREEN_HEIGHT)){return false;}
+    if (!mDisplay.createRenderer("AKFSF Simulations", SCREEN_WIDTH, SCREEN_HEIGHT))
+    {
+        return false;
+    }
 
     // Main Simulation Loop
     mSimulation.reset(loadSimulation1Parameters());
-    //mSimulation.setTimeMultiplier(10);
     bool mRunning = true;
     while(mRunning)
     {
@@ -60,9 +62,15 @@ int main( int argc, char* args[] )
         mDisplay.clearScreen();
 
         // Draw Background Grid
-        mDisplay.setDrawColour(101,101,101);
-        for (int x = -GRID_SIZE; x <= GRID_SIZE; x+=GRID_SPACEING){mDisplay.drawLine(Vector2(x,-GRID_SIZE),Vector2(x,GRID_SIZE));}
-        for (int y = -GRID_SIZE; y <= GRID_SIZE; y+=GRID_SPACEING){mDisplay.drawLine(Vector2(-GRID_SIZE,y),Vector2(GRID_SIZE,y));}
+        mDisplay.setDrawColour(101, 101, 101);
+        for (int x = -GRID_SIZE; x <= GRID_SIZE; x += GRID_SPACEING)
+        {
+            mDisplay.drawLine(Vector2(x, -GRID_SIZE), Vector2(x, GRID_SIZE));
+        }
+        for (int y = -GRID_SIZE; y <= GRID_SIZE; y += GRID_SPACEING)
+        {
+            mDisplay.drawLine(Vector2(-GRID_SIZE, y), Vector2(GRID_SIZE, y));
+        }
 
         // Draw Simulation
         mSimulation.render(mDisplay);
@@ -73,28 +81,64 @@ int main( int argc, char* args[] )
         SDL_Event event;
         while( SDL_PollEvent( &event ) != 0 )
         {
-            if( event.type == SDL_QUIT ){mRunning = false;}
+            if( event.type == SDL_QUIT )
+            {
+                mRunning = false;
+            }
             else if (event.type == SDL_KEYDOWN)
             {
                 switch( event.key.keysym.sym )
                 {               
-                    case SDLK_SPACE: mSimulation.togglePauseSimulation(); break;
-                    case SDLK_ESCAPE:mRunning = false; break;
-                    case SDLK_KP_PLUS: mSimulation.increaseZoom(); break;
-                    case SDLK_KP_MINUS: mSimulation.decreaseZoom(); break;
-                    case SDLK_RIGHTBRACKET: mSimulation.increaseTimeMultiplier(); break;
-                    case SDLK_LEFTBRACKET: mSimulation.decreaseTimeMultiplier(); break;
-                    case SDLK_r: mSimulation.reset(); break;
-                    case SDLK_1: mSimulation.reset(loadSimulation1Parameters()); break;
-                    case SDLK_2: mSimulation.reset(loadSimulation2Parameters()); break;
-                    case SDLK_3: mSimulation.reset(loadSimulation3Parameters()); break;
-                    case SDLK_4: mSimulation.reset(loadSimulation4Parameters()); break;
-                    case SDLK_5: mSimulation.reset(loadSimulation5Parameters()); break;
-                    case SDLK_6: mSimulation.reset(loadSimulation6Parameters()); break;
-                    case SDLK_7: mSimulation.reset(loadSimulation7Parameters()); break;
-                    case SDLK_8: mSimulation.reset(loadSimulation8Parameters()); break;
-                    case SDLK_9: mSimulation.reset(loadSimulation9Parameters()); break;
-                    case SDLK_0: mSimulation.reset(loadSimulation0Parameters()); break;
+                    case SDLK_SPACE:
+                        mSimulation.togglePauseSimulation(); break;
+                    case SDLK_ESCAPE:
+                        mRunning = false;
+                        break;
+                    case SDLK_KP_PLUS:
+                        mSimulation.increaseZoom();
+                        break;
+                    case SDLK_KP_MINUS:
+                        mSimulation.decreaseZoom();
+                        break;
+                    case SDLK_RIGHTBRACKET:
+                        mSimulation.increaseTimeMultiplier();
+                        break;
+                    case SDLK_LEFTBRACKET:
+                        mSimulation.decreaseTimeMultiplier();
+                        break;
+                    case SDLK_r:
+                        mSimulation.reset();
+                        break;
+                    case SDLK_1:
+                        mSimulation.reset(loadSimulation1Parameters());
+                        break;
+                    case SDLK_2:
+                        mSimulation.reset(loadSimulation2Parameters());
+                        break;
+                    case SDLK_3:
+                        mSimulation.reset(loadSimulation3Parameters());
+                        break;
+                    case SDLK_4:
+                        mSimulation.reset(loadSimulation4Parameters());
+                        break;
+                    case SDLK_5:
+                        mSimulation.reset(loadSimulation5Parameters());
+                        break;
+                    case SDLK_6:
+                        mSimulation.reset(loadSimulation6Parameters());
+                        break;
+                    case SDLK_7:
+                        mSimulation.reset(loadSimulation7Parameters());
+                        break;
+                    case SDLK_8:
+                        mSimulation.reset(loadSimulation8Parameters());
+                        break;
+                    case SDLK_9:
+                        mSimulation.reset(loadSimulation9Parameters());
+                        break;
+                    case SDLK_0:
+                        mSimulation.reset(loadSimulation0Parameters());
+                        break;
                 }
             }
         }
@@ -116,7 +160,7 @@ SimulationParams loadSimulation1Parameters()
     sim_params.profile_name = "1 - Constant Velocity + RADAR + Zero Initial Conditions";
     sim_params.car_initial_velocity = 5;
     sim_params.car_initial_psi = M_PI/180.0 * 45.0;
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(500,500,5));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(500, 500, 5));
     return sim_params;
 }
 
@@ -128,7 +172,7 @@ SimulationParams loadSimulation2Parameters()
     sim_params.car_initial_y = 500;
     sim_params.car_initial_velocity = 5;
     sim_params.car_initial_psi = M_PI/180.0 * -135.0;
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(0,0,5));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(0, 0, 5));
     return sim_params;
 }
 
@@ -138,10 +182,10 @@ SimulationParams loadSimulation3Parameters()
     sim_params.profile_name = "3 - Constant Speed Profile + RADAR";
     sim_params.car_initial_velocity = 5;
     sim_params.car_initial_psi = M_PI/180.0 * 45.0;
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(100,100,5));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(100,-100,5));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(0,100,5));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(0,0,5));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(100, 100, 5));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(100, -100, 5));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(0, 100, 5));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(0, 0, 5));
     return sim_params;
 }
 
@@ -152,10 +196,10 @@ SimulationParams loadSimulation4Parameters()
     sim_params.end_time = 200;
     sim_params.car_initial_velocity = 0;
     sim_params.car_initial_psi = M_PI/180.0 * 45.0;
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(100,100,2));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(100,-100,5));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(0,100,7));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(0,0,2));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(100, 100, 2));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(100, -100, 5));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(0, 100, 7));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(0, 0, 2));
     return sim_params;
 }
 
@@ -180,7 +224,6 @@ SimulationParams loadSimulation7Parameters()
     return sim_params;
 }
 
-
 SimulationParams loadSimulation8Parameters()
 {    
     SimulationParams sim_params = loadSimulation4Parameters();
@@ -199,23 +242,23 @@ SimulationParams loadSimulation9Parameters()
     sim_params.car_initial_velocity = 0;
     sim_params.car_initial_psi = M_PI/180.0 * -90.0;
     sim_params.gyro_bias = -3.1/180.0*M_PI;
-    sim_params.car_commands.emplace_back(new MotionCommandStraight(3,-2));
-    sim_params.car_commands.emplace_back(new MotionCommandTurnTo(M_PI/180.0 * 90.0,-2));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(400,-300,5));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(350,-300,2));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(300,-250,7));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(300,-300,5));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(250,-250,5));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(250,-300,5));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(200,-250,5));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(200,-300,5));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(200,-150,2));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(100,-100,-2));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(200,0,7));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(300,-100,5));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(300,-300,7));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(400,-300,3));
-    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(400,-400,1));
+    sim_params.car_commands.emplace_back(new MotionCommandStraight(3, -2));
+    sim_params.car_commands.emplace_back(new MotionCommandTurnTo(M_PI/180.0 * 90.0, -2));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(400, -300, 5));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(350, -300, 2));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(300, -250, 7));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(300, -300, 5));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(250, -250, 5));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(250, -300, 5));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(200, -250, 5));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(200, -300, 5));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(200, -150, 2));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(100, -100, -2));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(200, 0, 7));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(300, -100, 5));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(300, -300, 7));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(400, -300, 3));
+    sim_params.car_commands.emplace_back(new MotionCommandMoveTo(400, -400, 1));
     return sim_params;
 }
 

@@ -6,13 +6,14 @@
 // Program Includes
 #include "display.h"
 
-Display::Display()
-:mScreenWidth(0),
- mScreenHeight(0),
- mWindow(nullptr),
- mRenderer(nullptr),
- mMainFont(nullptr)
-{}
+Display::Display() :
+    mScreenWidth(0),
+    mScreenHeight(0),
+    mWindow(nullptr),
+    mRenderer(nullptr),
+    mMainFont(nullptr)
+{
+}
 
 Display::~Display()
 {
@@ -32,19 +33,23 @@ bool Display::createRenderer( std::string title, int screenWidth, int screenHeig
     mViewYOffset = 0.0;
     
     // Create window
-    mWindow = SDL_CreateWindow( title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screenWidth, screenHeight, 0 );
+    mWindow = SDL_CreateWindow( title.c_str(), SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED, screenWidth, screenHeight, 0 );
     if( mWindow == nullptr )
     {
-        std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+        std::cout << "Window could not be created! SDL_Error: "
+                  << SDL_GetError() << std::endl;
         destroyRenderer();
         return false;
     }
 
     // Create Renderer
-    mRenderer = SDL_CreateRenderer( mWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
+    mRenderer = SDL_CreateRenderer( mWindow, -1,
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
     if( mRenderer == nullptr )
     {
-        std::cout << "Renderer could not be created! SDL Error: " << SDL_GetError() << std::endl;
+        std::cout << "Renderer could not be created! SDL Error: "
+                  << SDL_GetError() << std::endl;
         destroyRenderer();
         return false;
     }
@@ -53,7 +58,8 @@ bool Display::createRenderer( std::string title, int screenWidth, int screenHeig
     mMainFont = TTF_OpenFont( "Roboto-Regular.ttf", 18 );
     if( mMainFont == nullptr )
     {
-        std::cout << "Failed to load font! SDL_ttf Error: " <<  TTF_GetError() << std::endl;
+        std::cout << "Failed to load font! SDL_ttf Error: " <<  TTF_GetError()
+                  << std::endl;
         destroyRenderer();
         return false;
     }
@@ -117,7 +123,10 @@ void Display::setView(double xOffset, double yOffset)
     mViewYOffset = yOffset - mViewWidth/2.0;
 }
 
-void Display::setDrawColour(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha){SDL_SetRenderDrawColor( mRenderer, red, green, blue, alpha );}
+void Display::setDrawColour(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha)
+{
+    SDL_SetRenderDrawColor( mRenderer, red, green, blue, alpha );
+}
 
 void Display::drawLine(const Vector2& startPos, const Vector2& endPos)
 {
@@ -126,8 +135,21 @@ void Display::drawLine(const Vector2& startPos, const Vector2& endPos)
     SDL_RenderDrawLine( mRenderer, p1.x, p1.y, p2.x, p2.y );
 }
 
-void Display::drawLines(const std::vector<Vector2> &points){for (unsigned int i=1; i < points.size(); ++i){drawLine(points[i-1],points[i]);}}
-void Display::drawLines(const std::vector<std::vector<Vector2>>& dataset){for (const std::vector<Vector2>& points : dataset){drawLines(points);}}
+void Display::drawLines(const std::vector<Vector2> &points)
+{
+    for (unsigned int i=1; i < points.size(); ++i)
+    {
+        drawLine(points[i-1],points[i]);
+    }
+}
+
+void Display::drawLines(const std::vector<std::vector<Vector2>>& dataset)
+{
+    for (const std::vector<Vector2>& points : dataset)
+    {
+        drawLines(points);
+    }
+}
 
 Vector2 Display::transformPoint(const Vector2& point)
 {
@@ -135,15 +157,17 @@ Vector2 Display::transformPoint(const Vector2& point)
     double dy = point.y - mViewYOffset;
     double y = mScreenHeight - (dx/mViewHeight)*mScreenHeight;
     double x = (dy/mViewWidth)*mScreenWidth;
-    return Vector2(x,y);
+    return Vector2(x, y);
 }
 
-void Display::drawText_MainFont(const std::string text,const Vector2 pos, const double scale, const SDL_Color color, bool centered)
+void Display::drawText_MainFont(const std::string text, const Vector2 pos,
+    const double scale, const SDL_Color color, bool centered)
 {
-    SDL_Surface* surface = TTF_RenderText_Blended(mMainFont,text.c_str(), color);
+    SDL_Surface* surface = TTF_RenderText_Blended(mMainFont, text.c_str(), color);
     if (surface == nullptr)
     {
-        std::cout <<  "Unable to render text surface! SDL_ttf Error: " << TTF_GetError() << std::endl;
+        std::cout <<  "Unable to render text surface! SDL_ttf Error: "
+                  << TTF_GetError() << std::endl;
         return;
     }
     
@@ -151,7 +175,8 @@ void Display::drawText_MainFont(const std::string text,const Vector2 pos, const 
     if (texture == nullptr)
     {
         SDL_FreeSurface(surface);
-        std::cout << "Unable to create texture from rendered text! SDL Error: " << SDL_GetError() << std::endl;
+        std::cout << "Unable to create texture from rendered text! SDL Error: "
+                  << SDL_GetError() << std::endl;
         return;
     }
 
@@ -173,7 +198,8 @@ void Display::drawText_MainFont(const std::string text,const Vector2 pos, const 
     SDL_FreeSurface(surface);
 }
 
-std::vector<Vector2> transformPoints(const std::vector<Vector2>& points, const Vector2& position, const double rotation)
+std::vector<Vector2> transformPoints(const std::vector<Vector2>& points,
+    const Vector2& position, const double rotation)
 {
     double ctheta = cos(rotation);
     double stheta = sin(rotation);
@@ -182,27 +208,37 @@ std::vector<Vector2> transformPoints(const std::vector<Vector2>& points, const V
     {
         double x = point.x * ctheta - stheta * point.y + position.x;
         double y = point.x * stheta + ctheta * point.y + position.y;
-        transformedPoints.push_back(Vector2(x,y));
+        transformedPoints.push_back(Vector2(x, y));
     }
     return transformedPoints;
 }
+
 std::vector<std::vector<Vector2>> transformPoints(const std::vector<std::vector<Vector2>>& dataset, const Vector2& position, const double rotation)
 {
     std::vector<std::vector<Vector2>> transformedDataset;
-    for (const std::vector<Vector2> points : dataset){transformedDataset.push_back(transformPoints(points, position, rotation));}
+    for (const std::vector<Vector2> points : dataset)
+    {
+        transformedDataset.push_back(transformPoints(points, position, rotation));
+    }
     return transformedDataset;
 }
 
 std::vector<Vector2> offsetPoints(const std::vector<Vector2>& points, const Vector2& offset)
 {
     std::vector<Vector2> transformedPoints;
-    for (const Vector2& point : points){transformedPoints.push_back(Vector2(point.x + offset.x,point.y + offset.y));}
+    for (const Vector2& point : points)
+    {
+        transformedPoints.push_back(Vector2(point.x + offset.x,point.y + offset.y));
+    }
     return transformedPoints;
 }
 
 std::vector<std::vector<Vector2>> offsetPoints(const std::vector<std::vector<Vector2>>& dataset, const Vector2& offset)
 {
     std::vector<std::vector<Vector2>> transformedDataset;
-    for (const std::vector<Vector2> points : dataset){transformedDataset.push_back(offsetPoints(points, offset));}
+    for (const std::vector<Vector2> points : dataset)
+    {
+        transformedDataset.push_back(offsetPoints(points, offset));
+    }
     return transformedDataset;
 }

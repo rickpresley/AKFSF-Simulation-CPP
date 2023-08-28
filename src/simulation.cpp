@@ -1,10 +1,9 @@
-
 #include "simulation.h"
 #include "utils.h"
 
 
-Simulation::Simulation()
-: m_sim_parameters(SimulationParams()),
+Simulation::Simulation() :
+    m_sim_parameters(SimulationParams()),
     m_is_paused(false),
     m_is_running(false),
     m_time_multiplier(1),
@@ -12,7 +11,8 @@ Simulation::Simulation()
     m_time(0.0),
     m_time_till_gyro_measurement(0.0),
     m_time_till_radar_measurement(0.0)
-{}
+{
+}
 
 void Simulation::reset()
 {
@@ -31,11 +31,16 @@ void Simulation::reset()
     m_gyro_sensor.setGyroBias(m_sim_parameters.gyro_bias);
 
     m_radar_sensor.reset();
-    m_radar_sensor.setRadarNoiseStd(m_sim_parameters.radar_range_noise_std, m_sim_parameters.radar_theta_noise_std);
+    m_radar_sensor.setRadarNoiseStd(m_sim_parameters.radar_range_noise_std,
+        m_sim_parameters.radar_theta_noise_std);
 
-    m_car.reset(m_sim_parameters.car_initial_x, m_sim_parameters.car_initial_y,m_sim_parameters.car_initial_psi, m_sim_parameters.car_initial_velocity);
+    m_car.reset(m_sim_parameters.car_initial_x, m_sim_parameters.car_initial_y,
+        m_sim_parameters.car_initial_psi, m_sim_parameters.car_initial_velocity);
     
-    for(auto& cmd : m_sim_parameters.car_commands){m_car.addVehicleCommand(cmd.get());}
+    for(auto& cmd : m_sim_parameters.car_commands)
+    {
+        m_car.addVehicleCommand(cmd.get());
+    }
 
     // Plotting Variables
     m_radar_measurement_history.clear();
@@ -51,7 +56,6 @@ void Simulation::reset()
     std::cout << "Simulation: Reset" << std::endl;
 }
 
-
 void Simulation::update()
 {
     if (m_is_running && !m_is_paused)
@@ -63,15 +67,18 @@ void Simulation::update()
             if(m_time >= m_sim_parameters.end_time)
             {
                 m_is_running = false;
-                std::cout << "Simulation: Reached End of Simulation Time (" << m_time << ")" << std::endl;
+                std::cout << "Simulation: Reached End of Simulation Time ("
+                          << m_time << ")" << std::endl;
                 return;
             }
 
             // Update Motion
             m_car.update(m_time, m_sim_parameters.time_step);
-            m_vehicle_position_history.push_back(Vector2(m_car.getVehicleState().x,m_car.getVehicleState().y));
+            m_vehicle_position_history.push_back(
+                Vector2(m_car.getVehicleState().x, m_car.getVehicleState().y));
 
             // Gyro Measurement / Prediction Step
+#if 1
             if (m_sim_parameters.gyro_enabled)
             {
                 if (m_time_till_gyro_measurement <= 0)
@@ -82,13 +89,17 @@ void Simulation::update()
                 }
                 m_time_till_gyro_measurement -= m_sim_parameters.time_step;
             }
+#endif
 
             // Radar Measurement
             if (m_sim_parameters.radar_enabled)
             {
                 if (m_time_till_radar_measurement <= 0)
                 {
-                    RadarMeasurement radar_measurement = m_radar_sensor.generateRadarMeasurement(m_car.getVehicleState().x,m_car.getVehicleState().y);
+                    RadarMeasurement radar_measurement =
+                        m_radar_sensor.generateRadarMeasurement(
+                        m_car.getVehicleState(). x,m_car.getVehicleState().y);
+                    //m_kalman_filter.predictionStep(meas, m_sim_parameters.time_step);
                     m_kalman_filter.handleRadarMeasurement(radar_measurement);
                     m_radar_measurement_history.push_back(radar_measurement);
                     m_time_till_radar_measurement += 1.0/m_sim_parameters.radar_update_rate;
@@ -104,7 +115,8 @@ void Simulation::update()
                 m_filter_position_history.push_back(Vector2(filter_state.x, filter_state.y));
                 m_filter_error_x_position_history.push_back(filter_state.x - vehicle_state.x);
                 m_filter_error_y_position_history.push_back(filter_state.y - vehicle_state.y);
-                m_filter_error_heading_history.push_back(wrapAngle(filter_state.psi - vehicle_state.psi));
+                m_filter_error_heading_history.push_back(
+                    wrapAngle(filter_state.psi - vehicle_state.psi));
                 m_filter_error_velocity_history.push_back(filter_state.V - vehicle_state.V);
             }
 
@@ -113,20 +125,21 @@ void Simulation::update()
         }
     }
 }
-        
+
 void Simulation::render(Display& disp)
 {
-    std::vector<Vector2> marker_lines1 = {{0.5,0.5},{-0.5,-0.5}};
-    std::vector<Vector2> marker_lines2 = {{0.5,-0.5},{-0.5,0.5}};
+    std::vector<Vector2> marker_lines1 = {{0.5,  0.5}, {-0.5, -0.5}};
+    std::vector<Vector2> marker_lines2 = {{0.5, -0.5}, {-0.5,  0.5}};
 
-    disp.setView(m_view_size * disp.getScreenAspectRatio(),m_view_size, m_car.getVehicleState().x, m_car.getVehicleState().y);
+    disp.setView(m_view_size * disp.getScreenAspectRatio(), m_view_size,
+        m_car.getVehicleState().x, m_car.getVehicleState().y);
 
     m_car.render(disp);
 
-    disp.setDrawColour(0,100,0);
+    disp.setDrawColour(0, 100, 0);
     disp.drawLines(m_vehicle_position_history);
 
-    disp.setDrawColour(100,0,0);
+    disp.setDrawColour(100, 0, 0);
     disp.drawLines(m_filter_position_history);
 
     if (m_kalman_filter.isInitialised())
@@ -136,25 +149,26 @@ void Simulation::render(Display& disp)
 
         double x = filter_state.x;
         double y = filter_state.y;
-        double sigma_xx = cov(0,0);
-        double sigma_yy = cov(1,1);
-        double sigma_xy = cov(0,1);
+        double sigma_xx = cov(0, 0);
+        double sigma_yy = cov(1, 1);
+        double sigma_xy = cov(0, 1);
 
-        std::vector<Vector2> marker_lines1_world = offsetPoints(marker_lines1, Vector2(x,y));
-        std::vector<Vector2> marker_lines2_world = offsetPoints(marker_lines2, Vector2(x,y));
-        disp.setDrawColour(255,0,0);
+        std::vector<Vector2> marker_lines1_world = offsetPoints(marker_lines1, Vector2(x, y));
+        std::vector<Vector2> marker_lines2_world = offsetPoints(marker_lines2, Vector2(x, y));
+        disp.setDrawColour(255, 0, 0);
         disp.drawLines(marker_lines1_world);
         disp.drawLines(marker_lines2_world);
 
-        std::vector<Vector2> cov_world = generateEllipse(x,y,sigma_xx,sigma_yy,sigma_xy);
-        disp.setDrawColour(255,0,0);
+        std::vector<Vector2> cov_world = generateEllipse(x, y, sigma_xx, sigma_yy, sigma_xy);
+        disp.setDrawColour(255, 0, 0);
         disp.drawLines(cov_world);
 
     }
 
     // Render Radar Measurements
-    std::vector<std::vector<Vector2>> m_radar_marker = {{{0.5,0.5},{-0.5,-0.5}}, {{0.5,-0.5},{-0.5,0.5}}};
-    disp.setDrawColour(0,0,255);
+    std::vector<std::vector<Vector2>> m_radar_marker =
+        {{{0.5, 0.5},{-0.5, -0.5}}, {{0.5, -0.5},{-0.5, 0.5}}};
+    disp.setDrawColour(0, 0, 255);
     for(const auto& meas : m_radar_measurement_history)
     {
         double x = meas.range*cos(meas.theta);
@@ -162,27 +176,43 @@ void Simulation::render(Display& disp)
         disp.drawLines(offsetPoints(m_radar_marker, Vector2(x, y)));
     }
 
-    int x_offset, y_offset; 
-    int stride = 20;
     // Simulation Status / Parameters
-    x_offset = 10;
-    y_offset = 30;
-    std::string time_string = string_format("Time: %0.2f (x%d)",m_time,m_time_multiplier);
-    std::string profile_string = string_format("Profile: %s", m_sim_parameters.profile_name.c_str());
-    std::string radar_string = string_format("RADAR: %s (%0.1f Hz)", (m_sim_parameters.radar_enabled ? "ON" : "OFF"), m_sim_parameters.radar_update_rate);
-    std::string gyro_string = string_format("GYRO: %s (%0.1f Hz)", (m_sim_parameters.gyro_enabled ? "ON" : "OFF"), m_sim_parameters.gyro_update_rate);
-    disp.drawText_MainFont(profile_string,Vector2(x_offset,y_offset+stride*-1),1.0,{255,255,255});
-    disp.drawText_MainFont(time_string,Vector2(x_offset,y_offset+stride*0),1.0,{255,255,255});
-    disp.drawText_MainFont(radar_string,Vector2(x_offset,y_offset+stride*1),1.0,{255,255,255});
-    disp.drawText_MainFont(gyro_string,Vector2(x_offset,y_offset+stride*2),1.0,{255,255,255});
-    if (m_is_paused){disp.drawText_MainFont("PAUSED",Vector2(x_offset,y_offset+stride*3),1.0,{255,0,0});}
-    if (!m_is_running){disp.drawText_MainFont("FINISHED",Vector2(x_offset,y_offset+stride*4),1.0,{255,0,0});}
+    int stride = 20;
+    int x_offset = 10;
+    int y_offset = 30;
+    std::string time_string = string_format("Time: %0.2f (x%d)",
+        m_time, m_time_multiplier);
+    std::string profile_string = string_format("Profile: %s",
+        m_sim_parameters.profile_name.c_str());
+    std::string radar_string = string_format("RADAR: %s (%0.1f Hz)",
+        (m_sim_parameters.radar_enabled ? "ON" : "OFF"),
+        m_sim_parameters.radar_update_rate);
+    std::string gyro_string = string_format("GYRO: %s (%0.1f Hz)",
+        (m_sim_parameters.gyro_enabled ? "ON" : "OFF"),
+        m_sim_parameters.gyro_update_rate);
+    disp.drawText_MainFont(profile_string, Vector2(x_offset, y_offset+stride*-1),
+        1.0, {255, 255, 255});
+    disp.drawText_MainFont(time_string, Vector2(x_offset, y_offset+stride*0),
+        1.0, {255, 255, 255});
+    disp.drawText_MainFont(radar_string, Vector2(x_offset, y_offset+stride*1),
+        1.0, {255, 255, 255});
+    disp.drawText_MainFont(gyro_string, Vector2(x_offset, y_offset+stride*2),
+        1.0, {255, 255, 255});
+    if (m_is_paused)
+    {
+        disp.drawText_MainFont("PAUSED",Vector2(x_offset,y_offset+stride*3),1.0,{255,0,0});
+    }
+    if (!m_is_running)
+    {
+        disp.drawText_MainFont("FINISHED",Vector2(x_offset,y_offset+stride*4), 1.0,{255,0,0});
+    }
 
     // Vehicle State
     x_offset = 800;
     y_offset = 10;
     std::string velocity_string = string_format("    Velocity: %0.2f m/s",m_car.getVehicleState().V);
-    std::string yaw_string = string_format("   Heading: %0.2f deg",m_car.getVehicleState().psi * 180.0/M_PI);
+    std::string yaw_string =
+        string_format("   Heading: %0.2f deg",m_car.getVehicleState().psi * 180.0/M_PI);
     std::string xpos = string_format("X Position: %0.2f m",m_car.getVehicleState().x);
     std::string ypos = string_format("Y Position: %0.2f m",m_car.getVehicleState().y);
     disp.drawText_MainFont("Vehicle State",Vector2(x_offset-5,y_offset+stride*0),1.0,{255,255,255});
@@ -191,68 +221,116 @@ void Simulation::render(Display& disp)
     disp.drawText_MainFont(xpos,Vector2(x_offset,y_offset+stride*3),1.0,{255,255,255});
     disp.drawText_MainFont(ypos,Vector2(x_offset,y_offset+stride*4),1.0,{255,255,255});
 
-    std::string kf_velocity_string = string_format("    Velocity: %0.2f m/s",m_kalman_filter.getVehicleState().V);
-    std::string kf_yaw_string = string_format("   Heading: %0.2f deg",m_kalman_filter.getVehicleState().psi * 180.0/M_PI);
-    std::string kf_xpos = string_format("X Position: %0.2f m",m_kalman_filter.getVehicleState().x);
-    std::string kf_ypos = string_format("Y Position: %0.2f m",m_kalman_filter.getVehicleState().y);
-    disp.drawText_MainFont("Filter State",Vector2(x_offset,y_offset+stride*6),1.0,{255,255,255});
-    disp.drawText_MainFont(kf_velocity_string,Vector2(x_offset,y_offset+stride*7),1.0,{255,255,255});
-    disp.drawText_MainFont(kf_yaw_string,Vector2(x_offset,y_offset+stride*8),1.0,{255,255,255});
-    disp.drawText_MainFont(kf_xpos,Vector2(x_offset,y_offset+stride*9),1.0,{255,255,255});
-    disp.drawText_MainFont(kf_ypos,Vector2(x_offset,y_offset+stride*10),1.0,{255,255,255});
+    // Filter state
+    std::string kf_velocity_string =
+        string_format("    Velocity: %0.2f m/s", m_kalman_filter.getVehicleState().V);
+    std::string kf_yaw_string =
+        string_format("   Heading: %0.2f deg", m_kalman_filter.getVehicleState().psi * 180.0/M_PI);
+    std::string kf_xpos =
+        string_format("X Position: %0.2f m", m_kalman_filter.getVehicleState().x);
+    std::string kf_ypos =
+        string_format("Y Position: %0.2f m", m_kalman_filter.getVehicleState().y);
+    disp.drawText_MainFont("Filter State", Vector2(x_offset, y_offset+stride*6), 1.0, {255, 255, 255});
+    disp.drawText_MainFont(kf_velocity_string, Vector2(x_offset, y_offset+stride*7), 1.0, {255, 255, 255});
+    disp.drawText_MainFont(kf_yaw_string, Vector2(x_offset, y_offset+stride*8), 1.0, {255, 255, 255});
+    disp.drawText_MainFont(kf_xpos, Vector2(x_offset, y_offset+stride*9), 1.0, {255, 255, 255});
+    disp.drawText_MainFont(kf_ypos, Vector2(x_offset, y_offset+stride*10), 1.0, {255, 255, 255});
 
     // Keyboard Input
     x_offset = 10;
     y_offset = 650;
-    disp.drawText_MainFont("Reset Key: r",Vector2(x_offset,y_offset+stride*0),1.0,{255,255,255});
-    disp.drawText_MainFont("Pause Key: [space bar]",Vector2(x_offset,y_offset+stride*1),1.0,{255,255,255});
-    disp.drawText_MainFont("Speed Multiplier (+/-) Key: [ / ] ",Vector2(x_offset,y_offset+stride*2),1.0,{255,255,255});
-    disp.drawText_MainFont("Zoom (+/-) Key: + / - (keypad)",Vector2(x_offset,y_offset+stride*3),1.0,{255,255,255});
-    disp.drawText_MainFont("Motion Profile Key: 1 - 9,0",Vector2(x_offset,y_offset+stride*4),1.0,{255,255,255});
+    disp.drawText_MainFont("Reset Key: r", Vector2(x_offset, y_offset+stride*0),
+        1.0, {255, 255, 255});
+    disp.drawText_MainFont("Pause Key: [space bar]", Vector2(x_offset, y_offset+stride*1),
+        1.0, {255, 255, 255});
+    disp.drawText_MainFont("Speed Mult. (+/-) Key: [ / ] ", Vector2(x_offset, y_offset+stride*2),
+        1.0, {255, 255, 255});
+    disp.drawText_MainFont("Zoom (+/-) Key: + / - (keypad)", Vector2(x_offset, y_offset+stride*3),
+        1.0, {255, 255, 255});
+    disp.drawText_MainFont("Motion Profile Key: 1 - 9,0", Vector2(x_offset, y_offset+stride*4),
+        1.0, {255, 255, 255});
 
 
     // Filter Error State
     x_offset = 750;
     y_offset = 650;
-    std::string xpos_error_string = string_format("X Position RMSE: %0.2f m",calculateRMSE(m_filter_error_x_position_history));
-    std::string ypos_error_string = string_format("Y Position RMSE: %0.2f m",calculateRMSE(m_filter_error_y_position_history));
-    std::string heading_error_string = string_format("   Heading RMSE: %0.2f deg",180.0 / M_PI * calculateRMSE(m_filter_error_heading_history));
-    std::string velocity_error_string = string_format("    Velocity RMSE: %0.2f m/s",calculateRMSE(m_filter_error_velocity_history));
-    disp.drawText_MainFont(xpos_error_string,Vector2(x_offset,y_offset+stride*0),1.0,{255,255,255});
-    disp.drawText_MainFont(ypos_error_string,Vector2(x_offset,y_offset+stride*1),1.0,{255,255,255});
-    disp.drawText_MainFont(heading_error_string,Vector2(x_offset,y_offset+stride*2),1.0,{255,255,255});
-    disp.drawText_MainFont(velocity_error_string,Vector2(x_offset,y_offset+stride*3),1.0,{255,255,255});
+    std::string xpos_error_string = string_format("X Position RMSE: %0.2f m",
+        calculateRMSE(m_filter_error_x_position_history));
+    std::string ypos_error_string = string_format("Y Position RMSE: %0.2f m",
+        calculateRMSE(m_filter_error_y_position_history));
+    std::string heading_error_string = string_format("   Heading RMSE: %0.2f deg",
+        180.0 / M_PI * calculateRMSE(m_filter_error_heading_history));
+    std::string velocity_error_string = string_format("    Velocity RMSE: %0.2f m/s",
+        calculateRMSE(m_filter_error_velocity_history));
+    disp.drawText_MainFont(xpos_error_string, Vector2(x_offset,y_offset+stride*0),
+        1.0, {255, 255, 255});
+    disp.drawText_MainFont(ypos_error_string, Vector2(x_offset,y_offset+stride*1),
+        1.0, {255, 255, 255});
+    disp.drawText_MainFont(heading_error_string, Vector2(x_offset,y_offset+stride*2),
+        1.0, {255, 255, 255});
+    disp.drawText_MainFont(velocity_error_string, Vector2(x_offset,y_offset+stride*3),
+        1.0, {255, 255, 255});
 }
    
-void Simulation::reset(SimulationParams sim_params){m_sim_parameters = sim_params; reset();}
+void Simulation::reset(SimulationParams sim_params)
+{
+    m_sim_parameters = sim_params;
+    reset();
+}
+
 void Simulation::increaseTimeMultiplier()
 {
     m_time_multiplier++;
-    std::cout << "Simulation: Time Multiplier Increased (x" << m_time_multiplier << ")" << std::endl;
+    std::cout << "Simulation: Time Multiplier Increased (x" << m_time_multiplier
+              << ")" << std::endl;
 }
+
 void Simulation::decreaseTimeMultiplier()
 {
     if (m_time_multiplier > 1)
     {
         m_time_multiplier--;
-        std::cout << "Simulation: Time Multiplier Decreased (x" << m_time_multiplier << ")" << std::endl;
+        std::cout << "Simulation: Time Multiplier Decreased (x" << m_time_multiplier << ")"
+                  << std::endl;
     }
 }
-void Simulation::setTimeMultiplier(unsigned int multiplier){m_time_multiplier = static_cast<int>(multiplier);}
+
+void Simulation::setTimeMultiplier(unsigned int multiplier)
+{
+    m_time_multiplier = static_cast<int>(multiplier);
+}
+
 void Simulation::increaseZoom()
 {
-    if (m_view_size > 25){m_view_size -= 25;}
+    if (m_view_size > 25)
+    {
+        m_view_size -= 25;
+    }
     std::cout << "Simulation: Zoom Increased (" << m_view_size << "m)" << std::endl;
 }
+
 void Simulation::decreaseZoom()
 {
-    if (m_view_size < 400){m_view_size += 25;}
+    if (m_view_size < 400)
+    {
+        m_view_size += 25;
+    }
     std::cout << "Simulation: Zoom Decreased (" << m_view_size << "m)" << std::endl;
 }
+
 void Simulation::togglePauseSimulation()
 {
     m_is_paused = !m_is_paused;
-    std::cout << "Simulation: Paused (" << (m_is_paused?"True":"False") << ")" << std::endl;
+    std::cout << "Simulation: Paused (" << (m_is_paused?"True":"False") << ")"
+              << std::endl;
 }
-bool Simulation::isPaused(){return m_is_paused;}
-bool Simulation::isRunning(){return m_is_running;}
+
+bool Simulation::isPaused()
+{
+    return m_is_paused;
+}
+
+bool Simulation::isRunning()
+{
+    return m_is_running;
+}

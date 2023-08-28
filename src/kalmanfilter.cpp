@@ -1,4 +1,4 @@
-// ------------------------------------------------------------------------------- //
+// -------------------------------------------------------------------------- //
 // Advanced Kalman Filtering and Sensor Fusion Course - Extended Kalman Filter
 //
 // ####### STUDENT FILE #######
@@ -68,23 +68,29 @@ void KalmanFilter::handleRadarMeasurement(RadarMeasurement meas)
         state(1) = meas.range*sin(meas.theta);
 
         MatrixXd cov = Matrix4d::Zero();
-        cov(0,0) = INIT_POS_STD*INIT_POS_STD;
-        cov(1,1) = INIT_POS_STD*INIT_POS_STD;
-        cov(2,2) = INIT_VEL_STD*INIT_VEL_STD;
-        cov(3,3) = INIT_VEL_STD*INIT_VEL_STD;
+        cov(0, 0) = INIT_POS_STD*INIT_POS_STD;
+        cov(1, 1) = INIT_POS_STD*INIT_POS_STD;
+        cov(2, 2) = INIT_VEL_STD*INIT_VEL_STD;
+        cov(3, 3) = INIT_VEL_STD*INIT_VEL_STD;
 
         setState(state);
         setCovariance(cov);
     } 
 }
 
-void KalmanFilter::predictionStep(GyroMeasurement gyro, double dt) { predictionStep(dt);}
+void KalmanFilter::predictionStep(GyroMeasurement gyro, double dt)
+{
+    predictionStep(dt);
+}
 
 Matrix2d KalmanFilter::getVehicleStatePositionCovariance()
 {
     Matrix2d pos_cov = Matrix2d::Zero();
     MatrixXd cov = getCovariance();
-    if (isInitialised() && cov.size() != 0){pos_cov << cov(0,0), cov(0,1), cov(1,0), cov(1,1);}
+    if (isInitialised() && cov.size() != 0)
+    {
+        pos_cov << cov(0, 0), cov(0, 1), cov(1, 0), cov(1, 1);
+    }
     return pos_cov;
 }
 
@@ -93,7 +99,7 @@ VehicleState KalmanFilter::getVehicleState()
     if (isInitialised())
     {
         VectorXd state = getState(); // STATE VECTOR [X,Y,PSI,V,...]
-        return VehicleState(state[0],state[1],state[2],state[3]);
+        return VehicleState(state[0], state[1], state[2], state[3]);
     }
     return VehicleState();
 }
@@ -117,8 +123,8 @@ void KalmanFilter::predictionStep(double dt)
              0, 0,  0,  1;
 
         MatrixXd Q = Matrix2d::Zero();
-        Q(0,0) = (ACCEL_STD*ACCEL_STD);
-        Q(1,1) = (ACCEL_STD*ACCEL_STD);
+        Q(0, 0) = (ACCEL_STD*ACCEL_STD);
+        Q(1, 1) = (ACCEL_STD*ACCEL_STD);
 
         MatrixXd L = MatrixXd(4,2);
         L << (0.5*dt*dt),           0,
@@ -129,7 +135,7 @@ void KalmanFilter::predictionStep(double dt)
         state = F*state;
         cov = F*cov*F.transpose() + L*Q*L.transpose();
 
-        // ----------------------------------------------------------------------- //
+        // ------------------------------------------------------------------ //
 
         setState(state);
         setCovariance(cov);
