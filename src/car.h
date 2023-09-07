@@ -7,38 +7,48 @@
 
 struct VehicleState
 {
-    double x, y, psi, V;
+    double x, y, vx, vy;
     double yaw_rate, steering;
 
     VehicleState() :
         x(0.0),
         y(0.0),
-        psi(0.0),
-        V(0.0),
+        vx(0.0),
+        vy(0.0),
         yaw_rate(0.0),
         steering(0.0)
     {
     }
 
-    VehicleState(double setX, double setY, double setPsi, double setV) :
+    VehicleState(double setX, double setY, double setVx, double setVy) :
         x(setX),
         y(setY),
-        psi(setPsi),
-        V(setV),
+        vx(setVx),
+        vy(setVy),
         yaw_rate(0.0),
         steering(0.0)
     {
     }
 
-    VehicleState(double setX, double setY, double setPsi, double setV,
+    VehicleState(double setX, double setY, double setVx, double setVy,
         double setPsiDot, double setSteering) :
         x(setX),
         y(setY),
-        psi(setPsi),
-        V(setV),
+        vx(setVx),
+        vy(setVy),
         yaw_rate(setPsiDot),
         steering(setSteering)
     {
+    }
+
+    double V()
+    {
+        return sqrt(vx*vx + vy*vy);
+    }
+
+    double psi()
+    {
+        return atan2(vy, vx);
     }
 };
 
@@ -113,8 +123,8 @@ public:
     bool update(double time, double dt, VehicleState state)
     {
         m_velocity_command = m_command_velocity;
-        double angle_error = wrapAngle(m_command_heading - state.psi);
-        m_steering_command = angle_error * (std::signbit(state.V)?-1.0:1.0);
+        double angle_error = wrapAngle(m_command_heading - state.psi());
+        m_steering_command = angle_error * (std::signbit(state.V())?-1.0:1.0);
         return std::fabs(angle_error) < 0.001;
     }
 
@@ -141,9 +151,9 @@ public:
         double delta_y = m_command_y - state.y;
         double range = sqrt(delta_x*delta_x + delta_y*delta_y);
         double angle_command = atan2(delta_y,delta_x);
-        double psi = wrapAngle(state.psi - (std::signbit(state.V) ?M_PI:0.0));
+        double psi = wrapAngle(state.psi() - (std::signbit(state.V()) ?M_PI:0.0));
         double angle_error = wrapAngle(angle_command - psi);
-        m_steering_command = angle_error * (std::signbit(state.V)?-1.0:1.0);
+        m_steering_command = angle_error * (std::signbit(state.V())?-1.0:1.0);
         return (range < 5.0);
     }
 
@@ -167,7 +177,7 @@ public:
     }
 
     BicycleMotion(double x0, double y0, double psi0, double V0) :
-        m_initial_state(VehicleState(x0, y0, psi0, V0)),
+        m_initial_state(VehicleState(x0, y0, V0*cos(psi0), V0*sin(psi0))),
         m_wheel_base(4.0),
         m_max_velocity(28.0),
         m_max_acceleration(2.0),
@@ -180,7 +190,7 @@ public:
     {
         m_current_state = m_initial_state;
         m_steering_command = m_initial_state.steering;
-        m_velocity_command = m_initial_state.V;
+        m_velocity_command = m_initial_state.V();
     }
 
     void reset(VehicleState state)
@@ -191,12 +201,12 @@ public:
 
     void update(double dt)
     {
-        double cosPsi = cos(m_current_state.psi);
-        double sinPsi = sin(m_current_state.psi);
-        double x = m_current_state.x + m_current_state.V * cosPsi * dt;
-        double y = m_current_state.y + m_current_state.V * sinPsi * dt;
+        double cosPsi = cos(m_current_state.psi());
+        double sinPsi = sin(m_current_state.psi());
+        double x = m_current_state.x + m_current_state.V() * cosPsi * dt;
+        double y = m_current_state.y + m_current_state.V() * sinPsi * dt;
 
-        double accel = m_velocity_command - m_current_state.V;
+        double accel = m_velocity_command - m_current_state.V();
         if (accel > m_max_acceleration)
         {
             accel = m_max_acceleration;
@@ -216,7 +226,7 @@ public:
             steer = -m_max_steering;
         }
 
-        double vel = m_current_state.V + accel * dt;
+        double vel = m_current_state.V() + accel * dt;
         if (vel > m_max_velocity)
         {
             vel = m_max_velocity;
@@ -226,9 +236,9 @@ public:
             vel = -m_max_velocity;
         }
 
-        double psi_dot = m_current_state.V*steer/m_wheel_base;
-        double psi = wrapAngle(m_current_state.psi + psi_dot* dt);
-        m_current_state = VehicleState(x, y, psi, vel, psi_dot, steer);
+        double psi_dot = m_current_state.V()*steer/m_wheel_base;
+        double psi = wrapAngle(m_current_state.psi() + psi_dot* dt);
+        m_current_state = VehicleState(x, y, vel*cos(psi), vel*sin(psi), psi_dot, steer);
     }
 
     void setSteeringCmd(double steer)
@@ -280,7 +290,7 @@ public:
 
     void reset(double x0, double y0, double psi0, double V0)
     {
-        m_vehicle_model.reset(VehicleState(x0,y0,psi0,V0));
+        m_vehicle_model.reset(VehicleState(x0, y0, V0*cos(psi0), V0*sin(psi0)));
         while (!m_vehicle_commands.empty())
         {
             m_vehicle_commands.pop();
@@ -334,7 +344,7 @@ public:
     void render(Display& disp)
     {
         double steeringPsi = m_vehicle_model.getVehicleState().steering;
-        double carPsiOffset = m_vehicle_model.getVehicleState().psi;
+        double carPsiOffset = m_vehicle_model.getVehicleState().psi();
         Vector2 carPosOffset = Vector2(m_vehicle_model.getVehicleState().x,
             m_vehicle_model.getVehicleState().y);
         

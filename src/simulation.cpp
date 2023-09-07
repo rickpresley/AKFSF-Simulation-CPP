@@ -98,7 +98,7 @@ void Simulation::update()
                 {
                     RadarMeasurement radar_measurement =
                         m_radar_sensor.generateRadarMeasurement(
-                        m_car.getVehicleState(). x,m_car.getVehicleState().y);
+                        m_car.getVehicleState().x, m_car.getVehicleState().y);
                     //m_kalman_filter.predictionStep(meas, m_sim_parameters.time_step);
                     m_kalman_filter.handleRadarMeasurement(radar_measurement);
                     m_radar_measurement_history.push_back(radar_measurement);
@@ -116,8 +116,8 @@ void Simulation::update()
                 m_filter_error_x_position_history.push_back(filter_state.x - vehicle_state.x);
                 m_filter_error_y_position_history.push_back(filter_state.y - vehicle_state.y);
                 m_filter_error_heading_history.push_back(
-                    wrapAngle(filter_state.psi - vehicle_state.psi));
-                m_filter_error_velocity_history.push_back(filter_state.V - vehicle_state.V);
+                    wrapAngle(filter_state.psi() - vehicle_state.psi()));
+                m_filter_error_velocity_history.push_back(filter_state.V() - vehicle_state.V());
             }
 
             // Update Time
@@ -210,11 +210,11 @@ void Simulation::render(Display& disp)
     // Vehicle State
     x_offset = 800;
     y_offset = 10;
-    std::string velocity_string = string_format("    Velocity: %0.2f m/s",m_car.getVehicleState().V);
+    std::string velocity_string = string_format("    Velocity: %0.2f m/s",m_car.getVehicleState().V());
     std::string yaw_string =
-        string_format("   Heading: %0.2f deg",m_car.getVehicleState().psi * 180.0/M_PI);
-    std::string xpos = string_format("X Position: %0.2f m",m_car.getVehicleState().x);
-    std::string ypos = string_format("Y Position: %0.2f m",m_car.getVehicleState().y);
+        string_format("   Heading: %0.2f deg", m_car.getVehicleState().psi() * 180.0/M_PI);
+    std::string xpos = string_format("X Position: %0.2f m", m_car.getVehicleState().x);
+    std::string ypos = string_format("Y Position: %0.2f m", m_car.getVehicleState().y);
     disp.drawText_MainFont("Vehicle State",Vector2(x_offset-5,y_offset+stride*0),1.0,{255,255,255});
     disp.drawText_MainFont(velocity_string,Vector2(x_offset,y_offset+stride*1),1.0,{255,255,255});
     disp.drawText_MainFont(yaw_string,Vector2(x_offset,y_offset+stride*2),1.0,{255,255,255});
@@ -223,9 +223,9 @@ void Simulation::render(Display& disp)
 
     // Filter state
     std::string kf_velocity_string =
-        string_format("    Velocity: %0.2f m/s", m_kalman_filter.getVehicleState().V);
+        string_format("    Velocity: %0.2f m/s", m_kalman_filter.getVehicleState().V());
     std::string kf_yaw_string =
-        string_format("   Heading: %0.2f deg", m_kalman_filter.getVehicleState().psi * 180.0/M_PI);
+        string_format("   Heading: %0.2f deg", m_kalman_filter.getVehicleState().psi() * 180.0/M_PI);
     std::string kf_xpos =
         string_format("X Position: %0.2f m", m_kalman_filter.getVehicleState().x);
     std::string kf_ypos =
