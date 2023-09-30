@@ -75,7 +75,6 @@ class KalmanFilter : public KalmanFilterBase
         Matrix2d getVehicleStatePositionCovariance();
 
         void predictionStep(double dt);
-        void predictionStep(GyroMeasurement gyro, double dt);
         void handleRadarMeasurement(RadarMeasurement meas);
 
 };

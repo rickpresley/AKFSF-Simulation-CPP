@@ -14,11 +14,7 @@ struct SimulationParams
     std::string profile_name;
     double time_step;
     double end_time;
-
-    bool gyro_enabled;
-    double gyro_update_rate;
-    double gyro_noise_std;
-    double gyro_bias;
+    double prediction_rate;
 
     bool radar_enabled;
     double radar_update_rate;
@@ -32,8 +28,7 @@ struct SimulationParams
 
     std::vector<std::shared_ptr<MotionCommandBase>> car_commands;
 
-    SimulationParams() : profile_name(""), time_step(0.1), end_time(120),
-        gyro_enabled(true), gyro_update_rate(10.0),gyro_noise_std(0.001), gyro_bias(0.0),
+    SimulationParams() : profile_name(""), time_step(0.1), end_time(120), prediction_rate(10.0),
         radar_enabled(true), radar_update_rate(2.0), radar_range_noise_std(1.0), radar_theta_noise_std(0.01),
         car_initial_x(0.0), car_initial_y(0.0), car_initial_psi(0.0), car_initial_velocity(5.0)
     {
@@ -64,7 +59,6 @@ private:
     SimulationParams m_sim_parameters;
     KalmanFilter m_kalman_filter;
     Car m_car;
-    GyroSensor m_gyro_sensor;
     RadarSensor m_radar_sensor;
 
     bool m_is_paused;
@@ -73,7 +67,7 @@ private:
     double m_view_size;
 
     double m_time;
-    double m_time_till_gyro_measurement;
+    double m_time_till_prediction;
     double m_time_till_radar_measurement;
 
     std::vector<RadarMeasurement> m_radar_measurement_history;

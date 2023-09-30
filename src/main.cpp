@@ -94,10 +94,10 @@ int main( int argc, char* args[] )
                     case SDLK_ESCAPE:
                         mRunning = false;
                         break;
-                    case SDLK_KP_PLUS:
+                    case SDLK_UP:
                         mSimulation.increaseZoom();
                         break;
-                    case SDLK_KP_MINUS:
+                    case SDLK_DOWN:
                         mSimulation.decreaseZoom();
                         break;
                     case SDLK_RIGHTBRACKET:
@@ -206,28 +206,28 @@ SimulationParams loadSimulation4Parameters()
 SimulationParams loadSimulation5Parameters()
 {    
     SimulationParams sim_params = loadSimulation1Parameters();
-    sim_params.profile_name = "5 - Constant Velocity + GYRO + Zero Initial Conditions";
+    sim_params.profile_name = "5 - Constant Velocity + RADAR + Zero Initial Conditions";
     return sim_params;
 }
 
 SimulationParams loadSimulation6Parameters()
 {    
     SimulationParams sim_params = loadSimulation2Parameters();
-    sim_params.profile_name = "6 - Constant Velocity + GYRO + Non-zero Initial Conditions";
+    sim_params.profile_name = "6 - Constant Velocity + RADAR + Non-zero Initial Conditions";
     return sim_params;
 }
 
 SimulationParams loadSimulation7Parameters()
 {    
     SimulationParams sim_params = loadSimulation3Parameters();
-    sim_params.profile_name = "7 - Constant Speed Profile + GYRO";
+    sim_params.profile_name = "7 - Constant Speed Profile + RADAR";
     return sim_params;
 }
 
 SimulationParams loadSimulation8Parameters()
 {    
     SimulationParams sim_params = loadSimulation4Parameters();
-    sim_params.profile_name = "8 - Variable Speed Profile + GYRO";
+    sim_params.profile_name = "8 - Variable Speed Profile + RADAR";
     return sim_params;
 }
 
@@ -235,13 +235,11 @@ SimulationParams loadSimulation9Parameters()
 {    
     SimulationParams sim_params;
     sim_params.profile_name = "9 - CAPSTONE";
-    sim_params.gyro_enabled = true;
     sim_params.end_time = 500;
     sim_params.car_initial_x = 400;
     sim_params.car_initial_y = -400;
     sim_params.car_initial_velocity = 0;
     sim_params.car_initial_psi = M_PI/180.0 * -90.0;
-    sim_params.gyro_bias = -3.1/180.0*M_PI;
     sim_params.car_commands.emplace_back(new MotionCommandStraight(3, -2));
     sim_params.car_commands.emplace_back(new MotionCommandTurnTo(M_PI/180.0 * 90.0, -2));
     sim_params.car_commands.emplace_back(new MotionCommandMoveTo(400, -300, 5));

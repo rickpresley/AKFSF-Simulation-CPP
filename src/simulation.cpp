@@ -9,7 +9,7 @@ Simulation::Simulation() :
     m_time_multiplier(1),
     m_view_size(100),
     m_time(0.0),
-    m_time_till_gyro_measurement(0.0),
+    m_time_till_prediction(0.0),
     m_time_till_radar_measurement(0.0)
 {
 }
@@ -18,17 +18,13 @@ void Simulation::reset()
 {
     // Reset Simulation
     m_time = 0.0;
-    m_time_till_gyro_measurement = 0.0;
+    m_time_till_prediction = 0.0;
     m_time_till_radar_measurement = 0.0;
 
     m_is_running = true;
     m_is_paused = false;
     
     m_kalman_filter.reset();
-
-    m_gyro_sensor.reset();
-    m_gyro_sensor.setGyroNoiseStd(m_sim_parameters.gyro_noise_std);
-    m_gyro_sensor.setGyroBias(m_sim_parameters.gyro_bias);
 
     m_radar_sensor.reset();
     m_radar_sensor.setRadarNoiseStd(m_sim_parameters.radar_range_noise_std,
@@ -77,19 +73,13 @@ void Simulation::update()
             m_vehicle_position_history.push_back(
                 Vector2(m_car.getVehicleState().x, m_car.getVehicleState().y));
 
-            // Gyro Measurement / Prediction Step
-#if 1
-            if (m_sim_parameters.gyro_enabled)
+            // Prediction Step
+            if (m_time_till_prediction <= 0)
             {
-                if (m_time_till_gyro_measurement <= 0)
-                {
-                    GyroMeasurement meas = m_gyro_sensor.generateGyroMeasurement(m_car.getVehicleState().yaw_rate);
-                    m_kalman_filter.predictionStep(meas, m_sim_parameters.time_step);
-                    m_time_till_gyro_measurement += 1.0/m_sim_parameters.gyro_update_rate;
-                }
-                m_time_till_gyro_measurement -= m_sim_parameters.time_step;
+                m_kalman_filter.predictionStep(m_sim_parameters.time_step);
+                m_time_till_prediction += 1.0/m_sim_parameters.prediction_rate;
             }
-#endif
+            m_time_till_prediction -= m_sim_parameters.time_step;
 
             // Radar Measurement
             if (m_sim_parameters.radar_enabled)
@@ -99,7 +89,6 @@ void Simulation::update()
                     RadarMeasurement radar_measurement =
                         m_radar_sensor.generateRadarMeasurement(
                         m_car.getVehicleState().x, m_car.getVehicleState().y);
-                    //m_kalman_filter.predictionStep(meas, m_sim_parameters.time_step);
                     m_kalman_filter.handleRadarMeasurement(radar_measurement);
                     m_radar_measurement_history.push_back(radar_measurement);
                     m_time_till_radar_measurement += 1.0/m_sim_parameters.radar_update_rate;
@@ -187,24 +176,19 @@ void Simulation::render(Display& disp)
     std::string radar_string = string_format("RADAR: %s (%0.1f Hz)",
         (m_sim_parameters.radar_enabled ? "ON" : "OFF"),
         m_sim_parameters.radar_update_rate);
-    std::string gyro_string = string_format("GYRO: %s (%0.1f Hz)",
-        (m_sim_parameters.gyro_enabled ? "ON" : "OFF"),
-        m_sim_parameters.gyro_update_rate);
     disp.drawText_MainFont(profile_string, Vector2(x_offset, y_offset+stride*-1),
         1.0, {255, 255, 255});
     disp.drawText_MainFont(time_string, Vector2(x_offset, y_offset+stride*0),
         1.0, {255, 255, 255});
     disp.drawText_MainFont(radar_string, Vector2(x_offset, y_offset+stride*1),
         1.0, {255, 255, 255});
-    disp.drawText_MainFont(gyro_string, Vector2(x_offset, y_offset+stride*2),
-        1.0, {255, 255, 255});
     if (m_is_paused)
     {
-        disp.drawText_MainFont("PAUSED",Vector2(x_offset,y_offset+stride*3),1.0,{255,0,0});
+        disp.drawText_MainFont("PAUSED",Vector2(x_offset,y_offset+stride*2),1.0,{255,0,0});
     }
     if (!m_is_running)
     {
-        disp.drawText_MainFont("FINISHED",Vector2(x_offset,y_offset+stride*4), 1.0,{255,0,0});
+        disp.drawText_MainFont("FINISHED",Vector2(x_offset,y_offset+stride*3), 1.0,{255,0,0});
     }
 
     // Vehicle State
@@ -245,7 +229,7 @@ void Simulation::render(Display& disp)
         1.0, {255, 255, 255});
     disp.drawText_MainFont("Speed Mult. (+/-) Key: [ / ] ", Vector2(x_offset, y_offset+stride*2),
         1.0, {255, 255, 255});
-    disp.drawText_MainFont("Zoom (+/-) Key: + / - (keypad)", Vector2(x_offset, y_offset+stride*3),
+    disp.drawText_MainFont("Zoom (+/-) Key: ↑ / ↓", Vector2(x_offset, y_offset+stride*3),
         1.0, {255, 255, 255});
     disp.drawText_MainFont("Motion Profile Key: 1 - 9,0", Vector2(x_offset, y_offset+stride*4),
         1.0, {255, 255, 255});

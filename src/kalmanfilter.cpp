@@ -1,21 +1,15 @@
 // -------------------------------------------------------------------------- //
 // Advanced Kalman Filtering and Sensor Fusion Course - Extended Kalman Filter
-//
-// ####### STUDENT FILE #######
-//
-// Usage:
-// -Rename this file to "kalmanfilter.cpp" if you want to use this code.
 
 #include "kalmanfilter.h"
 #include "utils.h"
 
 // -------------------------------------------------- //
-// YOU CAN USE AND MODIFY THESE CONSTANTS HERE
-constexpr double ACCEL_STD = 1.0;
-constexpr double INIT_POS_STD = 0.0;
-constexpr double INIT_VEL_STD = 10.0;
-constexpr double RADAR_RANGE_STD = 3.0;
-constexpr double RADAR_THETA_STD = 0.01;
+constexpr double ACCEL_STD       =  1.0;
+constexpr double INIT_POS_STD    =  0.0;
+constexpr double INIT_VEL_STD    = 10.0;
+constexpr double RADAR_RANGE_STD =  3.0;
+constexpr double RADAR_THETA_STD =  0.01;
 // -------------------------------------------------- //
 
 void KalmanFilter::handleRadarMeasurement(RadarMeasurement meas)
@@ -76,11 +70,6 @@ void KalmanFilter::handleRadarMeasurement(RadarMeasurement meas)
         setState(state);
         setCovariance(cov);
     } 
-}
-
-void KalmanFilter::predictionStep(GyroMeasurement gyro, double dt)
-{
-    predictionStep(dt);
 }
 
 Matrix2d KalmanFilter::getVehicleStatePositionCovariance()
