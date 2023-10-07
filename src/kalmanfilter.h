@@ -1,6 +1,7 @@
 #ifndef INCLUDE_AKFSFSIM_KALMANFILTER_H
 #define INCLUDE_AKFSFSIM_KALMANFILTER_H
 
+#include <optional>
 #include <vector>
 #include <Eigen/Dense>
 
@@ -20,9 +21,18 @@ class KalmanFilterBase
 {
     public:
 
-        KalmanFilterBase():m_initialised(false){}
+        KalmanFilterBase() :
+            m_initialised(false)
+        {}
         virtual ~KalmanFilterBase(){}
-        void reset(){m_initialised = false;}
+        void reset()
+        {
+            m_init_x.reset();
+            m_init_y.reset();
+            m_init_hdg.reset();
+            m_init_vel.reset();
+            m_initialised = false;
+        }
         bool isInitialised() const {return m_initialised;}
 
     protected:
@@ -32,8 +42,13 @@ class KalmanFilterBase
         void setState(const VectorXd& state ) {m_state = state; m_initialised = true;}
         void setCovariance(const MatrixXd& cov ){m_covariance = cov;}
 
-    private:
+        std::optional<double> m_init_x;
+        std::optional<double> m_init_y;
+        std::optional<double> m_init_vel;
+        std::optional<double> m_init_hdg;
         bool m_initialised;
+
+    private:
         VectorXd m_state;
         MatrixXd m_covariance;
 };

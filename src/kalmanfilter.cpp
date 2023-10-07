@@ -134,7 +134,7 @@ void KalmanFilter::predictionStep(GyroMeasurement gyro, double dt)
 
         setState(state);
         setCovariance(cov);
-    } 
+    }
 }
 
 void KalmanFilter::handleGPSMeasurement(GPSMeasurement meas)
@@ -169,20 +169,47 @@ void KalmanFilter::handleGPSMeasurement(GPSMeasurement meas)
     }
     else
     {
-        VectorXd state = Vector4d::Zero();
-        MatrixXd cov = Matrix4d::Zero();
+        if(! (m_init_x && m_init_y) )
+        {
+            m_init_x = meas.x;
+            m_init_y = meas.y;
+        }
+        else if( ! m_init_hdg )
+        {
+            double delta_x = meas.x - m_init_x.value();
+            double delta_y = meas.y - m_init_y.value();
+            if ((delta_x*delta_x + delta_y*delta_y) > 3*GPS_POS_STD)
+            {
+                m_init_hdg = wrapAngle(atan2(delta_y, delta_x));
+                m_init_x = meas.x;
+                m_init_y = meas.y;
+            }
+        }
 
-        state(0) = meas.x;
-        state(1) = meas.y;
-        cov(0,0) = GPS_POS_STD*GPS_POS_STD;
-        cov(1,1) = GPS_POS_STD*GPS_POS_STD;
-        cov(2,2) = INIT_PSI_STD*INIT_PSI_STD;
-        cov(3,3) = INIT_VEL_STD*INIT_VEL_STD;
+        if( ! m_init_vel )
+        {
+            m_init_vel = 0.0;
+        }
 
-        setState(state);
-        setCovariance(cov);
+        if( m_init_x && m_init_y && m_init_hdg && m_init_vel )
+        {
+            VectorXd state = Vector4d::Zero();
+            MatrixXd cov = Matrix4d::Zero();
+
+            state(0) = m_init_x.value();
+            state(1) = m_init_y.value();
+            state(2) = m_init_hdg.value();
+            state(3) = m_init_vel.value();
+
+            cov(0, 0) = GPS_POS_STD*GPS_POS_STD;
+            cov(1, 1) = GPS_POS_STD*GPS_POS_STD;
+            cov(2, 2) = LIDAR_THETA_STD*LIDAR_THETA_STD;
+            cov(3, 3) = INIT_VEL_STD*INIT_VEL_STD;
+
+            setState(state);
+            setCovariance(cov);
+        }
     } 
-             
 }
 
 Matrix2d KalmanFilter::getVehicleStatePositionCovariance()
