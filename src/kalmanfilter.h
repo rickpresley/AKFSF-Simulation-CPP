@@ -31,6 +31,7 @@ class KalmanFilterBase
             m_init_y.reset();
             m_init_hdg.reset();
             m_init_vel.reset();
+            m_init_bias.reset();
             m_initialised = false;
         }
         bool isInitialised() const {return m_initialised;}
@@ -46,6 +47,7 @@ class KalmanFilterBase
         std::optional<double> m_init_y;
         std::optional<double> m_init_vel;
         std::optional<double> m_init_hdg;
+        std::optional<double> m_init_bias;
         bool m_initialised;
 
     private:

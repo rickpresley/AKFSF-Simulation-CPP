@@ -13,6 +13,7 @@
 // YOU CAN USE AND MODIFY THESE CONSTANTS HERE
 constexpr double ACCEL_STD = 1.0;
 constexpr double GYRO_STD = 0.01/180.0 * M_PI;
+constexpr double GYRO_BIAS_STD = 0.005/180.0 * M_PI;
 constexpr double INIT_VEL_STD = 10.0;
 constexpr double INIT_PSI_STD = 45.0/180.0 * M_PI;
 constexpr double GPS_POS_STD = 3.0;
@@ -68,21 +69,35 @@ void KalmanFilter::handleLidarMeasurement(LidarMeasurement meas, const BeaconMap
             R << LIDAR_RANGE_STD*LIDAR_RANGE_STD, 0.0,
                  0.0, LIDAR_THETA_STD*LIDAR_THETA_STD;
 
-            MatrixXd H(2, 4);
-            H <<        -delta_x/r_hat,         -delta_y/r_hat,  0.0, 0.0,
-                 delta_y/(r_hat*r_hat), -delta_x/(r_hat*r_hat), -1.0, 0.0;
+            MatrixXd H(2, 5);
+            H <<        -delta_x/r_hat,         -delta_y/r_hat,  0.0, 0.0, 0.0,
+                 delta_y/(r_hat*r_hat), -delta_x/(r_hat*r_hat), -1.0, 0.0, 0.0;
 
             MatrixXd S = H * cov * H.transpose() + R;
             MatrixXd K = cov * H.transpose() * S.inverse();
 
             state = state + K * v;
-            cov = (Matrix4d::Identity() - K * H) * cov;
+            cov = (MatrixXd::Identity(5, 5) - K * H) * cov;
         }
 
         // ------------------------------------------------------------------ //
 
         setState(state);
         setCovariance(cov);
+    }
+    else
+    {
+        // Estimate Heading from Lidar Measurement (CAPSTONE)
+        BeaconData map_beacon = map.getBeaconWithId(meas.id); // Match Beacon with built in Data Association Id
+        if (meas.id != -1 && map_beacon.id != -1)
+        {
+            if (m_init_x && m_init_y)
+            {
+                double delta_x = map_beacon.x - m_init_x.value();
+                double delta_y = map_beacon.y - m_init_y.value();
+                m_init_hdg = wrapAngle(atan2(delta_y, delta_x) - meas.theta);
+            }
+        }
     }
 }
 
@@ -91,7 +106,7 @@ void KalmanFilter::predictionStep(GyroMeasurement gyro, double dt)
     if (isInitialised())
     {
         VectorXd state = getState();
-        MatrixXd cov = getCovariance();
+        MatrixXd cov   = getCovariance();
 
         // Implement The Kalman Filter Prediction Step for the system in the  
         // section below.
@@ -102,31 +117,35 @@ void KalmanFilter::predictionStep(GyroMeasurement gyro, double dt)
         // values within correct range, otherwise strange angle effects might be seen.
         // ------------------------------------------------------------------ //
 
-        double px = state[0];
-        double py = state[1];
-        double psi = state[2];
-        double V = state[3];
+        double px   = state[0];
+        double py   = state[1];
+        double psi  = state[2];
+        double V    = state[3];
+        double bias = state[4];
 
         double px_new = px + dt*V*cos(psi);
         double py_new = py + dt*V*sin(psi);
-        double psi_new = wrapAngle(psi + dt * gyro.psi_dot);
+        double psi_new = wrapAngle(psi + dt * (gyro.psi_dot - bias));
         double V_new = V;
         state << px_new,
                  py_new,
                  psi_new,
-                 V_new;
+                 V_new,
+                 bias;
 
-        Matrix4d F;
-        F << 1.0, 0.0, -dt*V*sin(psi), dt*cos(psi),
-             0.0, 1.0,  dt*V*cos(psi), dt*sin(psi),
-             0.0, 0.0,            1.0,         0.0,
-             0.0, 0.0,            0.0,         1.0;
+        MatrixXd F = MatrixXd::Zero(5, 5);
+        F << 1.0, 0.0, -dt*V*sin(psi), dt*cos(psi), 0.0,
+             0.0, 1.0,  dt*V*cos(psi), dt*sin(psi), 0.0,
+             0.0, 0.0,            1.0,         0.0, -dt,
+             0.0, 0.0,            0.0,         1.0, 0.0,
+             0.0, 0.0,            0.0,         0.0, 1.0;
 
-        Matrix4d Q;
-        Q << 0.0, 0.0,                     0.0,                       0.0,
-             0.0, 0.0,                     0.0,                       0.0,
-             0.0, 0.0, dt*dt*GYRO_STD*GYRO_STD,                       0.0,
-             0.0, 0.0,                     0.0, dt*dt*ACCEL_STD*ACCEL_STD;
+        MatrixXd Q = MatrixXd::Zero(5, 5);
+        Q << 0.0, 0.0,                     0.0,                       0.0,                               0.0,
+             0.0, 0.0,                     0.0,                       0.0,                               0.0,
+             0.0, 0.0, dt*dt*GYRO_STD*GYRO_STD,                       0.0,                               0.0,
+             0.0, 0.0,                     0.0, dt*dt*ACCEL_STD*ACCEL_STD,                               0.0,
+             0.0, 0.0,                     0.0,                       0.0, dt*dt*GYRO_BIAS_STD*GYRO_BIAS_STD;
 
         cov = F * cov * F.transpose() + Q;
 
@@ -134,6 +153,10 @@ void KalmanFilter::predictionStep(GyroMeasurement gyro, double dt)
 
         setState(state);
         setCovariance(cov);
+    }
+    else
+    {
+        m_init_bias = gyro.psi_dot;
     }
 }
 
@@ -147,12 +170,12 @@ void KalmanFilter::handleGPSMeasurement(GPSMeasurement meas)
         MatrixXd cov = getCovariance();
 
         VectorXd z = Vector2d::Zero();
-        MatrixXd H = MatrixXd(2, 4);
+        MatrixXd H = MatrixXd(2, 5);
         MatrixXd R = Matrix2d::Zero();
 
         z << meas.x,meas.y;
-        H << 1, 0, 0, 0,
-             0, 1, 0, 0;
+        H << 1, 0, 0, 0, 0,
+             0, 1, 0, 0, 0;
         R(0,0) = GPS_POS_STD*GPS_POS_STD;
         R(1,1) = GPS_POS_STD*GPS_POS_STD;
 
@@ -161,8 +184,12 @@ void KalmanFilter::handleGPSMeasurement(GPSMeasurement meas)
         MatrixXd S = H * cov * H.transpose() + R;
         MatrixXd K = cov*H.transpose()*S.inverse();
 
-        state = state + K*y;
-        cov = (Matrix4d::Identity() - K*H) * cov;
+        VectorXd NIS = y.transpose()*S.inverse()*y;
+        if (NIS(0) < 5.99)
+        {
+            state = state + K*y;
+            cov = (MatrixXd::Identity(5, 5) - K*H) * cov;
+        }
 
         setState(state);
         setCovariance(cov);
@@ -191,20 +218,22 @@ void KalmanFilter::handleGPSMeasurement(GPSMeasurement meas)
             m_init_vel = 0.0;
         }
 
-        if( m_init_x && m_init_y && m_init_hdg && m_init_vel )
+        if( m_init_x && m_init_y && m_init_hdg && m_init_vel && m_init_bias )
         {
-            VectorXd state = Vector4d::Zero();
-            MatrixXd cov = Matrix4d::Zero();
+            VectorXd state = VectorXd::Zero(5);
+            MatrixXd cov = MatrixXd::Zero(5, 5);
 
             state(0) = m_init_x.value();
             state(1) = m_init_y.value();
             state(2) = m_init_hdg.value();
             state(3) = m_init_vel.value();
+            state(4) = m_init_bias.value();
 
             cov(0, 0) = GPS_POS_STD*GPS_POS_STD;
             cov(1, 1) = GPS_POS_STD*GPS_POS_STD;
             cov(2, 2) = LIDAR_THETA_STD*LIDAR_THETA_STD;
             cov(3, 3) = INIT_VEL_STD*INIT_VEL_STD;
+            cov(4, 4) = GYRO_STD*GYRO_STD;
 
             setState(state);
             setCovariance(cov);
